@@ -12,6 +12,7 @@
 // y|
 //  v
 
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
@@ -56,41 +57,49 @@ struct dimen_t
     int_t& operator[](component_index<1>) { return h; }
 };
 
+[[gnu::always_inline]]
 constexpr bool operator==(dimen_t lhs, dimen_t rhs)
 {
     return lhs.w == rhs.w && lhs.h == rhs.h;
 }
 
+[[gnu::always_inline]]
 constexpr bool operator!=(dimen_t lhs, dimen_t rhs)
 {
     return !(lhs == rhs);
 }
 
+[[gnu::always_inline]]
 constexpr bool operator<(dimen_t lhs, dimen_t rhs)
 {
     return lhs.w != rhs.w ? lhs.w < rhs.w : lhs.h < rhs.h;
 }
 
+[[gnu::always_inline]]
 constexpr dimen_t operator*(dimen_t lhs, int_t scale)
 {
     return { lhs.w * scale, lhs.h * scale };
 }
 
+[[gnu::always_inline]]
 constexpr dimen_t operator/(dimen_t lhs, int_t scale)
 {
     return { lhs.w / scale, lhs.h / scale };
 }
 
+[[gnu::always_inline]]
 constexpr dimen_t vec_mul(dimen_t dim, int_t v)
 {
     return dim * v;
 }
 
+[[gnu::always_inline]]
 constexpr dimen_t vec_div(dimen_t dim, int_t v)
 {
     return { dim.w / v, dim.h / v };
 }
 
+[[gnu::always_inline]]
 constexpr dimen_t dimen_t_add(dimen_t d1, dimen_t d2)
 {
     return { d1.w + d2.h, d1.h + d2.h };

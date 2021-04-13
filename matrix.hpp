@@ -79,7 +79,7 @@ struct imat3
         return rotate_cw(-n);
     }
 
-    static imat3 translate(coord by)
+    static imat3 translate(coord_t by)
     {
         return imat3
         {{{
@@ -156,7 +156,7 @@ imat3<T>& operator*=(imat3<T>& lhs,
 }
 
 template<typename T>
-coord transform(imat3<T> mat, coord crd)
+coord_t transform(imat3<T> mat, coord_t crd)
 {
     return
     {
@@ -166,7 +166,7 @@ coord transform(imat3<T> mat, coord crd)
 }
 
 template<typename T>
-rect transform(imat3<T> mat, rect r)
+rect_t transform(imat3<T> mat, rect_t r)
 {
     return rect_from_2_coords(transform(mat, r.c), transform(mat,r.r()));
 }
@@ -223,13 +223,13 @@ public:
     // Returns {0,0} for coordinate systems.
     dimen_t dimen() const { return m_dim; }
 
-    void rotate_cw(int2d_t quarter_turns)
+    void rotate_cw(int_t quarter_turns)
     {
         apply_matrix(imat3x3::rotate_cw(quarter_turns),
                      imat3x3::rotate_cw(-quarter_turns));
     }
 
-    void rotate_ccw(int2d_t quarter_turns)
+    void rotate_ccw(int_t quarter_turns)
     {
         apply_matrix(imat3x3::rotate_ccw(quarter_turns),
                      imat3x3::rotate_ccw(-quarter_turns));

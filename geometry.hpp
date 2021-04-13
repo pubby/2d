@@ -84,9 +84,9 @@ inline double e_dist(coord_t c1, coord_t c2) // euclidian distance
 // Reduces the fraction representind direction
 inline coord_t simplify_dir(coord_t direction)
 {
-    int_t const gcd_value = impl::gcd(direct_tion.x, direct_tion.y);
-    components([&direct_tion, gcd_value](auto c)
-               { direct_tion[c] /= gcd_value; });
+    int_t const gcd_value = impl::gcd(direction.x, direction.y);
+    components([&direction, gcd_value](auto c)
+               { direction[c] /= gcd_value; });
     return direction;
 }
 
@@ -103,6 +103,20 @@ inline coord_t rad_to_dir(double rad, int_t length)
         (int_t)std::round(std::cos(rad) * length),
         (int_t)std::round(-std::sin(rad) * length),
     };
+}
+
+constexpr dimen_t rotate(dimen_t dimen, int_t rotations)
+{
+    if((unsigned)rotations & 1)
+        return { dimen.h, dimen.w };
+    else
+        return dimen;
+}
+
+constexpr rect_t rotated_rect(coord_t upper_left, dimen_t dimen, 
+                              int_t rotations)
+{
+    return { upper_left, rotate(dimen, rotations) };
 }
 
 constexpr rect_t to_rect(dimen_t dim) { return { {0,0}, dim }; }
@@ -182,7 +196,7 @@ inline rect_t grow_rect_to_contain(rect_t r, coord_t to_hold)
         r.sw(),
         r.se(),
     }};
-    return rect_from_n_coord_ts(crds.begin(), crds.end());
+    return rect_from_n_coords(crds.begin(), crds.end());
 }
 
 inline rect_t grow_rect_to_contain(rect_t r1, rect_t r2)
@@ -197,7 +211,7 @@ inline rect_t grow_rect_to_contain(rect_t r1, rect_t r2)
         r1.nw(), r1.ne(), r1.sw(), r1.se(),
         r2.nw(), r2.ne(), r2.sw(), r2.se(),
     }};
-    return rect_from_n_coord_ts(crds.begin(), crds.end());
+    return rect_from_n_coords(crds.begin(), crds.end());
 }
 
 inline coord_t crop(coord_t crd, rect_t super)
@@ -218,7 +232,7 @@ inline rect_t crop(rect_t too_big, rect_t crop_boundary)
 {
     coord_t c1 = crop(too_big.c, crop_boundary);
     coord_t c2 = crop(too_big.r(), crop_boundary);
-    return rect_from_2_coord_ts(c1, c2);
+    return rect_from_2_coords(c1, c2);
 }
 
 inline rect_t rect_from_radius(coord_t center, int_t rad)
@@ -269,7 +283,7 @@ inline rect_t rect_margin(rect_t r, int_t x_margin, int_t y_margin)
 }
 
 class rect_iterator
-: public std::iterator<std::forward_iteratorag, coord_t const>
+: public std::iterator<std::forward_iterator_tag, coord_t const>
 {
     friend class rect_range;
 public:
@@ -328,7 +342,7 @@ inline bool operator!=(rect_iterator lhs, rect_iterator rhs)
 
 
 class rect_edge_iterator
-: public std::iterator<std::forward_iteratorag, coord_t const>
+: public std::iterator<std::forward_iterator_tag, coord_t const>
 {
     friend class rect_edge_range;
 public:
@@ -442,7 +456,7 @@ constexpr std::array<coord_t, 4> dir_range<4> =
 }};
 
 class adjacent_iterator
-: public std::iterator<std::forward_iteratorag, coord_t const>
+: public std::iterator<std::forward_iterator_tag, coord_t const>
 {
 friend class adjacent_range;
 public:

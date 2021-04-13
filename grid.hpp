@@ -27,7 +27,7 @@ struct is_grid : std::false_type {};
 template<typename T>
 struct is_grid<T, impl::ToVoid<typename T::is_grid> > : std::true_type {};
 
-template<typename T, int2d_t Width, int2d_t Height>
+template<typename T, int_t Width, int_t Height>
 class fixed_grid_t
 {
 private:
@@ -77,7 +77,7 @@ public:
 
 private:
     std::size_t index(coord_t c) const 
-        { return c.y * dimen_tsions().w + c.x; }
+        { return c.y * dimen().w + c.x; }
 
     array_type m_arr;
 };
@@ -148,20 +148,20 @@ public:
 
     T const& at(coord_t c) const
     {
-        if(!in_bounds(c, dimen_tsions()))
+        if(!in_bounds(c, dimen()))
             throw std::out_of_range("grid_t::at");
         return m_vec[index(c)];
     }
     T& at(coord_t c)
     {
-        if(!in_bounds(c, dimen_tsions()))
+        if(!in_bounds(c, dimen()))
             throw std::out_of_range("grid_t::at");
         return m_vec[index(c)];
     }
 
     T get(coord_t c, T const& default_) const
     {
-        return in_bounds(c, dimen_tsions()) ? m_vec[index(c)] : default_;
+        return in_bounds(c, dimen()) ? m_vec[index(c)] : default_;
     }
 
     T const& operator[](coord_t c) const { return m_vec[index(c)]; }
@@ -175,7 +175,7 @@ public:
     void resize(dimen_t new_dim)
     {
         grid_t new_grid(new_dim);
-        dimen_t const copy_dim = crop(dimen_tsions(), new_dim);
+        dimen_t const copy_dim = crop(dimen(), new_dim);
         for(auto crd : dimen_range(copy_dim))
             new_grid[crd] = std::move(operator[](crd));
         swap(new_grid);
@@ -212,8 +212,8 @@ void fblit(Grid& dest,
     static_assert(is_grid<Grid>::value, "must be a Grid");
     ASSERT(in_bounds(src_rect_t, src.to_rect_t()));
     ASSERT(in_bounds(src_rect_t, dest.to_rect_t()));
-    for(int2d_t y = 0; y < src_rect_t.d.h; ++y)
-    for(int2d_t x = 0; x < src_rect_t.d.w; ++x)
+    for(int_t y = 0; y < src_rect_t.d.h; ++y)
+    for(int_t x = 0; x < src_rect_t.d.w; ++x)
     {
         coord_t const dest_i = { dest_crd.x + x, dest_crd.y + y };
         coord_t const src_i = { src_rect_t.c.x + x, src_rect_t.c.y + y };
@@ -283,14 +283,14 @@ namespace impl
 inline grid_t<char> string_to_grid(std::string str)
 {
     auto lines = impl::lines_of(str);
-    dimen_t dim = { 0, static_cast<int2d_t>(lines.size()) };
+    dimen_t dim = { 0, static_cast<int_t>(lines.size()) };
     for(auto const& line : lines)
-        dim.w = std::max<int2d_t>(dim.w, line.size());
+        dim.w = std::max<int_t>(dim.w, line.size());
 
     grid_t<char> ret(dim, '\0');
 
-    for(int2d_t y = 0; y < dim.h; ++y)
-    for(int2d_t x = 0; x < static_cast<int2d_t>(lines[y].size()); ++x)
+    for(int_t y = 0; y < dim.h; ++y)
+    for(int_t x = 0; x < static_cast<int_t>(lines[y].size()); ++x)
         ret[{x,y}] = lines[y][x];
 
     return ret;
