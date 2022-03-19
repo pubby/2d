@@ -223,13 +223,13 @@ public:
     // Returns {0,0} for coordinate systems.
     dimen_t dimen() const { return m_dim; }
 
-    void rotate_cw(int_t quarter_turns)
+    void rotate_cw(int2d_t quarter_turns)
     {
         apply_matrix(imat3x3::rotate_cw(quarter_turns),
                      imat3x3::rotate_cw(-quarter_turns));
     }
 
-    void rotate_ccw(int_t quarter_turns)
+    void rotate_ccw(int2d_t quarter_turns)
     {
         apply_matrix(imat3x3::rotate_ccw(quarter_turns),
                      imat3x3::rotate_ccw(-quarter_turns));

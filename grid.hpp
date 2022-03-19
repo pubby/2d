@@ -21,13 +21,20 @@ namespace impl {
     using ToVoid = typename to_void<T>::type;
 }
 
+
+constexpr std::size_t grid_index(dimen_t d, coord_t c)
+    { return c.y * d.w + c.x; }
+
+constexpr coord_t from_grid_index(dimen_t d, int i)
+    { return { i % d.w, i / d.w }; }
+
 template<typename T, typename = void>
 struct is_grid : std::false_type {};
 
 template<typename T>
 struct is_grid<T, impl::ToVoid<typename T::is_grid> > : std::true_type {};
 
-template<typename T, int_t Width, int_t Height>
+template<typename T, int2d_t Width, int2d_t Height>
 class fixed_grid_t
 {
 private:
@@ -62,11 +69,28 @@ public:
 
     constexpr dimen_t dimen() const { return { Width, Height }; }
 
-    T const& at(coord_t c) const { return m_arr.at(index(c)); }
-    T& at(coord_t c) { return m_arr.at(index(c)); }
+    T const& at(coord_t c) const 
+    {
+        if(!in_bounds(c, dimen()))
+            throw std::out_of_range("grid_t::at");
+        return m_arr[index(c)];
+    }
+
+    T& at(coord_t c)
+    {
+        if(!in_bounds(c, dimen()))
+            throw std::out_of_range("grid_t::at");
+        return m_arr[index(c)];
+    }
+
+    T const& at(unsigned i) const { return m_arr.at(i); }
+    T& at(unsigned i) { return m_arr.at(i); }
 
     T const& operator[](coord_t c) const { return m_arr[index(c)]; }
     T& operator[](coord_t c) { return m_arr[index(c)]; }
+
+    T const& operator[](unsigned i) const { return m_arr[i]; }
+    T& operator[](unsigned i) { return m_arr[i]; }
 
     T const* data() const { return m_arr.data(); }
     T* data() { return m_arr.data(); }
@@ -75,9 +99,9 @@ public:
 
     void fill(T const& t) { m_arr.fill(t); }
 
+    std::size_t index(coord_t c) const { return grid_index(dimen(), c); }
+    coord_t from_index(unsigned i) const { return from_grid_index(dimen(), i); }
 private:
-    std::size_t index(coord_t c) const 
-        { return c.y * dimen().w + c.x; }
 
     array_type m_arr;
 };
@@ -152,12 +176,16 @@ public:
             throw std::out_of_range("grid_t::at");
         return m_vec[index(c)];
     }
+
     T& at(coord_t c)
     {
         if(!in_bounds(c, dimen()))
             throw std::out_of_range("grid_t::at");
         return m_vec[index(c)];
     }
+
+    T const& at(unsigned i) const { return m_vec.at(i); }
+    T& at(unsigned i) { return m_vec.at(i); }
 
     T get(coord_t c, T const& default_) const
     {
@@ -166,6 +194,9 @@ public:
 
     T const& operator[](coord_t c) const { return m_vec[index(c)]; }
     T& operator[](coord_t c) { return m_vec[index(c)]; }
+
+    T const& operator[](unsigned i) const { return m_vec[i]; }
+    T& operator[](unsigned i) { return m_vec[i]; }
 
     T const* data() const { return m_vec.data(); }
     T* data() { return m_vec.data(); }
@@ -192,8 +223,9 @@ public:
         m_vec.assign(m_vec.size(), t);
     }
 
-private:
     std::size_t index(coord_t c) const { return c.y * m_dim.w + c.x; }
+    coord_t from_index(unsigned i) const { return from_grid_index(dimen(), i); }
+private:
 
     vector_type m_vec;
     dimen_t m_dim;
@@ -212,8 +244,8 @@ void fblit(Grid& dest,
     static_assert(is_grid<Grid>::value, "must be a Grid");
     ASSERT(in_bounds(src_rect_t, src.to_rect_t()));
     ASSERT(in_bounds(src_rect_t, dest.to_rect_t()));
-    for(int_t y = 0; y < src_rect_t.d.h; ++y)
-    for(int_t x = 0; x < src_rect_t.d.w; ++x)
+    for(int2d_t y = 0; y < src_rect_t.d.h; ++y)
+    for(int2d_t x = 0; x < src_rect_t.d.w; ++x)
     {
         coord_t const dest_i = { dest_crd.x + x, dest_crd.y + y };
         coord_t const src_i = { src_rect_t.c.x + x, src_rect_t.c.y + y };
@@ -283,14 +315,14 @@ namespace impl
 inline grid_t<char> string_to_grid(std::string str)
 {
     auto lines = impl::lines_of(str);
-    dimen_t dim = { 0, static_cast<int_t>(lines.size()) };
+    dimen_t dim = { 0, static_cast<int2d_t>(lines.size()) };
     for(auto const& line : lines)
-        dim.w = std::max<int_t>(dim.w, line.size());
+        dim.w = std::max<int2d_t>(dim.w, line.size());
 
     grid_t<char> ret(dim, '\0');
 
-    for(int_t y = 0; y < dim.h; ++y)
-    for(int_t x = 0; x < static_cast<int_t>(lines[y].size()); ++x)
+    for(int2d_t y = 0; y < dim.h; ++y)
+    for(int2d_t x = 0; x < static_cast<int2d_t>(lines[y].size()); ++x)
         ret[{x,y}] = lines[y][x];
 
     return ret;

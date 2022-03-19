@@ -14,11 +14,11 @@
 namespace i2d {
 
 // A wrapper around the state of Bressenham's line algorithm.
-// NOTE: A direction vector of {0,0} is considered invalid.
+// NOTE: A dir vector of {0,0} is considered invalid.
 struct line_state_t
 {
-    coord_t position;
-    coord_t direction;
+    coord_t pos;
+    coord_t dir;
     int error;
 
     // Use these to construct 'line_state_t'.
@@ -27,32 +27,32 @@ struct line_state_t
     static line_state_t pos_dir(coord_t pos, coord_t dir);
     static line_state_t from_to(coord_t from, coord_t to);
 
-    // The starting 'error' value for a given direction.
+    // The starting 'error' value for a given dir.
     // Starts the line right in the middle.
-    static int dir_err(coord_t direction);
+    static int dir_err(coord_t dir);
 
     static line_state_t next(line_state_t line);
-    static line_state_t next(line_state_t line, int_t n);
+    static line_state_t next(line_state_t line, int2d_t n);
     static line_state_t prev(line_state_t line);
-    static line_state_t prev(line_state_t line, int_t n);
+    static line_state_t prev(line_state_t line, int2d_t n);
 
     static line_state_t hflipped(line_state_t line);
     static line_state_t vflipped(line_state_t line);
 
     void advance() { *this = next(*this); }
-    void advance(int_t n) { *this = next(*this, n); }
+    void advance(int2d_t n) { *this = next(*this, n); }
     void radvance() { *this = prev(*this); }
-    void radvance(int_t n) { *this = prev(*this, n); }
+    void radvance(int2d_t n) { *this = prev(*this, n); }
     void hflip() { *this = hflipped(*this); }
     void vflip() { *this = vflipped(*this); }
 
-    explicit operator bool() const { return direction != coord_t{0,0}; }
+    explicit operator bool() const { return dir != coord_t{0,0}; }
 };
 
 constexpr bool operator==(line_state_t lhs, line_state_t rhs)
 {
-    return (lhs.position == rhs.position
-            && lhs.direction == rhs.direction
+    return (lhs.pos == rhs.pos
+            && lhs.dir == rhs.dir
             && lhs.error == rhs.error);
 }
 
@@ -62,42 +62,42 @@ constexpr bool operator!=(line_state_t lhs, line_state_t rhs)
 }
 
 class line_iterator
-: public std::iterator<std::random_access_iteratorag, coord_t const>
+: public std::iterator<std::random_access_iterator_tag, coord_t const>
 {
     friend class line_range;
 public:
     line_iterator() : m_state{} {}
     explicit line_iterator(line_state_t state) : m_state(state) {}
 
-    coord_t operator*() const { return m_state.position; }
-    coord_t const* operator->() const { return &m_state.position; }
+    coord_t operator*() const { return m_state.pos; }
+    coord_t const* operator->() const { return &m_state.pos; }
 
-    line_iterator& operator+=(int_t n) { m_state.advance(n); return *this; }
+    line_iterator& operator+=(int2d_t n) { m_state.advance(n); return *this; }
     line_iterator& operator++() { m_state.advance(); return *this; }
-    line_iterator operator++(int_t)
+    line_iterator operator++(int2d_t)
     {
         line_iterator ret(*this);
         ++(*this);
         return ret;
     }
 
-    line_iterator& operator-=(int_t n) { m_state.radvance(n); return *this; }
+    line_iterator& operator-=(int2d_t n) { m_state.radvance(n); return *this; }
     line_iterator& operator--() { m_state.radvance(); return *this; }
-    line_iterator operator--(int_t)
+    line_iterator operator--(int2d_t)
     {
         line_iterator ret(*this);
         --(*this);
         return ret;
     }
 
-    line_iterator operator+(int_t rhs) const
+    line_iterator operator+(int2d_t rhs) const
     {
         line_iterator lhs = *this;
         lhs += rhs;
         return lhs;
     }
 
-    line_iterator operator-(int_t rhs) const
+    line_iterator operator-(int2d_t rhs) const
     {
         line_iterator lhs = *this;
         lhs -= rhs;
@@ -142,17 +142,17 @@ public:
     {}
 
     line_range(coord_t from, coord_t to)
-    : line_range(line_state_t::from_to(from, to), cdistance(from, to) + 1)
+    : line_range(line_state_t::from_to(from, to), c_dist(from, to) + 1)
     {}
 
-    // NOTE: A direction vector of {0,0} is considered invalid.
-    line_range(coord_t pos, coord_t dir, int_t steps)
+    // NOTE: A dir vector of {0,0} is considered invalid.
+    line_range(coord_t pos, coord_t dir, int2d_t steps)
     : line_range(line_state_t::pos_dir(pos, dir), steps)
     {
-        assert(dir != {0,0});
+        assert((dir != coord_t{0,0}));
     }
 
-    line_range(line_state_t begin, int_t steps)
+    line_range(line_state_t begin, int2d_t steps)
     : m_begin(begin)
     , m_end(line_state_t::next(begin, steps))
     {}
@@ -182,9 +182,9 @@ namespace impl
         return sqr(dir.y) > sqr(dir.x);
     }
 
-    inline coord_t coord_abs(coord_t direction)
+    inline coord_t coord_abs(coord_t dir)
     {
-        return { std::abs(direction.x), std::abs(direction.y) };
+        return { std::abs(dir.x), std::abs(dir.y) };
     }
 
     // The version of Bressenham being used requires x and y to swap when
@@ -193,27 +193,27 @@ namespace impl
     template<typename Func>
     auto steep_swap(line_state_t line, Func func)
     {
-        if(is_steep(line.direction))
+        if(is_steep(line.dir))
             return func(line, component_index<1>{}, component_index<0>{});
         else
             return func(line, component_index<0>{}, component_index<1>{});
     }
 
     template<typename T>
-    constexpr int_t _signum(T x, std::false_type)
+    constexpr int2d_t _signum(T x, std::false_type)
     {
         return T(0) < x;
     }
 
     template<typename T>
-    constexpr int_t _signum(T x, std::true_type)
+    constexpr int2d_t _signum(T x, std::true_type)
     {
         return (T(0) < x) - (x < T(0));
     }
 
     // Returns either -1, 0, or 1, depending on sign of val.
     template<typename T>
-    constexpr int_t signum(T x)
+    constexpr int2d_t signum(T x)
     {
         static_assert(std::is_arithmetic<T>::value,
                       "only implemented for arithmetic");
@@ -229,12 +229,12 @@ void iterate_line(coord_t from, coord_t to, Func it_func)
 {
     // Using a slightly different algorithm than line_state_t.
     // This version doesn't need to swap x or y.
-    coord_t const direction = to - from;
-    coord_t const d = impl::coord_abs(direction);
-    coord_t const s = mapc(direction, &impl::signum<int_t>);
-    for(int_t err = d.x - d.y; it_func(from), from != to;)
+    coord_t const dir = to - from;
+    coord_t const d = impl::coord_abs(dir);
+    coord_t const s = mapc(dir, &impl::signum<int2d_t>);
+    for(int2d_t err = d.x - d.y; it_func(from), from != to;)
     {
-        int_t const err2 = 2 * err;
+        int2d_t const err2 = 2 * err;
         if(err2 > -d.y)
         {
             err -= d.y;
@@ -248,12 +248,12 @@ void iterate_line(coord_t from, coord_t to, Func it_func)
     }
 }
 
-line_state_t line_state_t::pos_dir(coord_t pos, coord_t dir)
+inline line_state_t line_state_t::pos_dir(coord_t pos, coord_t dir)
 {
     return { pos, dir, dir_err(dir) };
 }
 
-line_state_t line_state_t::from_to(coord_t from, coord_t to)
+inline line_state_t line_state_t::from_to(coord_t from, coord_t to)
 {
     if(from == to)
         return pos_dir(from, {1,0});
@@ -261,149 +261,157 @@ line_state_t line_state_t::from_to(coord_t from, coord_t to)
         return pos_dir(from, to - from);
 }
 
-int_t line_state_t::dir_err(coord_t direction)
+inline int2d_t line_state_t::dir_err(coord_t dir)
 {
     using namespace impl;
-    return std::abs(is_steep(direction) ? direction.y : direction.x);
+    return std::abs(is_steep(dir) ? dir.y : dir.x);
 }
 
-line_state_t line_state_t::next(line_state_t line)
+inline line_state_t line_state_t::next(line_state_t line)
 {
     using namespace impl;
-    assert((line.direction != coord_t{0,0}));
+    assert((line.dir != coord_t{0,0}));
     // This is 1 iteration of Bressenham's line algorithm.
     return impl::steep_swap(line,
         [](line_state_t line, auto cx, auto cy)
         {
-            coord_t const d = impl::coord_abs(line.direction);
-            line.position[cx] += impl::signum(line.direction[cx]);
+            coord_t const d = impl::coord_abs(line.dir);
+            line.pos[cx] += impl::signum(line.dir[cx]);
             line.error -= d[cy] * 2;
             if(line.error < 0)
             {
-                line.position[cy] += impl::signum(line.direction[cy]);
+                line.pos[cy] += impl::signum(line.dir[cy]);
                 line.error += d[cx] * 2;
             }
             return line;
         });
 }
 
-line_state_t line_state_t::prev(line_state_t line)
+inline line_state_t line_state_t::prev(line_state_t line)
 {
-    assert((line.direction != coord_t{0,0}));
+    assert((line.dir != coord_t{0,0}));
     return impl::steep_swap(line,
         [](line_state_t line, auto cx, auto cy)
         {
-            coord_t const d = impl::coord_abs(line.direction);
-            line.position[cx] -= impl::signum(line.direction[cx]);
+            coord_t const d = impl::coord_abs(line.dir);
+            line.pos[cx] -= impl::signum(line.dir[cx]);
             line.error += d[cy] * 2;
             if(line.error > d[cx] * 2)
             {
-                line.position[cy] -= impl::signum(line.direction[cy]);
+                line.pos[cy] -= impl::signum(line.dir[cy]);
                 line.error -= d[cx] * 2;
             }
             return line;
         });
 }
 
-static line_state_t next_impl(line_state_t line, int_t n)
+namespace impl
 {
-    assert((line.direction != coord_t{0,0}));
-    return impl::steep_swap(line,
-        [n](line_state_t line, auto cx, auto cy)
-        {
-            coord_t const d2 = vec_mul(impl::coord_abs(line.direction), 2);
-            line.position[cx] += n * impl::signum(line.direction[cx]);
-            line.error -= d2[cy] * n;
-            int_t const y_change = (d2[cx] - line.error - 1) / d2[cx];
-            assert(y_change >= 0);
-            line.position[cy] += y_change * impl::signum(line.direction[cy]);
-            line.error += y_change * d2[cx];
-            return line;
-        });
-}
 
-static line_state_t prev_impl(line_state_t line, int_t n)
-{
-    assert((line.direction != coord_t{0,0}));
-    return impl::steep_swap(line,
-        [n](line_state_t line, auto cx, auto cy)
-        {
-            coord_t const d2 = vec_mul(impl::coord_abs(line.direction), 2);
-            line.position[cx] -= n * impl::signum(line.direction[cx]);
-            line.error += d2[cy] * n;
-            int_t const y_change = (line.error - 1) / d2[cx];
-            assert(y_change >= 0);
-            line.position[cy] -= y_change * impl::signum(line.direction[cy]);
-            line.error -= y_change * d2[cx];
-            return line;
-        });
+    inline static line_state_t next_impl(line_state_t line, int2d_t n)
+    {
+        assert((line.dir != coord_t{0,0}));
+        return impl::steep_swap(line,
+            [n](line_state_t line, auto cx, auto cy)
+            {
+                coord_t const d2 = vec_mul(impl::coord_abs(line.dir), 2);
+                line.pos[cx] += n * impl::signum(line.dir[cx]);
+                line.error -= d2[cy] * n;
+                int2d_t const y_change = (d2[cx] - line.error - 1) / d2[cx];
+                assert(y_change >= 0);
+                line.pos[cy] += y_change * impl::signum(line.dir[cy]);
+                line.error += y_change * d2[cx];
+                return line;
+            });
+    }
+
+    inline static line_state_t prev_impl(line_state_t line, int2d_t n)
+    {
+        assert((line.dir != coord_t{0,0}));
+        return impl::steep_swap(line,
+            [n](line_state_t line, auto cx, auto cy)
+            {
+                coord_t const d2 = vec_mul(impl::coord_abs(line.dir), 2);
+                line.pos[cx] -= n * impl::signum(line.dir[cx]);
+                line.error += d2[cy] * n;
+                int2d_t const y_change = (line.error - 1) / d2[cx];
+                assert(y_change >= 0);
+                line.pos[cy] -= y_change * impl::signum(line.dir[cy]);
+                line.error -= y_change * d2[cx];
+                return line;
+            });
+    }
+
 }
 
 // This is the same as repeatedly calling next(line) n times,
 // except this function has O(1) complexity instead of O(1).
-line_state_t line_state_t::next(line_state_t line, int_t n)
+inline line_state_t line_state_t::next(line_state_t line, int2d_t n)
 {
     if(n < 0)
-        return prev_impl(line, -n);
+        return impl::prev_impl(line, -n);
     else
-        return next_impl(line, n);
+        return impl::next_impl(line, n);
 }
 
-line_state_t line_state_t::prev(line_state_t line, int_t n)
+inline line_state_t line_state_t::prev(line_state_t line, int2d_t n)
 {
     if(n < 0)
-        return next_impl(line, -n);
+        return impl::next_impl(line, -n);
     else
-        return prev_impl(line, n);
+        return impl::prev_impl(line, n);
 }
 
-line_state_t line_state_t::hflipped(line_state_t line)
+inline line_state_t line_state_t::hflipped(line_state_t line)
 {
     // TODO: Should error be updated?
-    line.direction.x *= -1;
+    line.dir.x *= -1;
     return line;
 }
 
-line_state_t line_state_t::vflipped(line_state_t line)
+inline line_state_t line_state_t::vflipped(line_state_t line)
 {
     // TODO: Should error be changed?
-    line.direction.y *= -1;
+    line.dir.y *= -1;
     return line;
 }
 
-std::size_t operator-(line_iterator lhs, line_iterator rhs)
+inline std::size_t operator-(line_iterator lhs, line_iterator rhs)
 {
-    return cdistance(*lhs, *rhs);
+    return c_dist(*lhs, *rhs);
 }
 
-static int_t iter_cmp(line_iterator lhs, line_iterator rhs)
+namespace impl
 {
-    coord_t p2 = *rhs;
-    return impl::steep_swap(lhs.state(),
-        [p2](line_state_t l1, auto cx, auto cy)
-        {
-            return (l1.position[cx] - p2[cx]) * l1.direction[cx];
-        });
+    inline static int2d_t iter_cmp(line_iterator lhs, line_iterator rhs)
+    {
+        coord_t p2 = *rhs;
+        return impl::steep_swap(lhs.state(),
+            [p2](line_state_t l1, auto cx, auto cy)
+            {
+                return (l1.pos[cx] - p2[cx]) * l1.dir[cx];
+            });
+    }
 }
 
-bool operator<(line_iterator lhs, line_iterator rhs)
+inline bool operator<(line_iterator lhs, line_iterator rhs)
 {
-    return iter_cmp(lhs, rhs) < 0;
+    return impl::iter_cmp(lhs, rhs) < 0;
 }
 
-bool operator<=(line_iterator lhs, line_iterator rhs)
+inline bool operator<=(line_iterator lhs, line_iterator rhs)
 {
-    return iter_cmp(lhs, rhs) <= 0;
+    return impl::iter_cmp(lhs, rhs) <= 0;
 }
 
-bool operator>(line_iterator lhs, line_iterator rhs)
+inline bool operator>(line_iterator lhs, line_iterator rhs)
 {
-    return iter_cmp(lhs, rhs) > 0;
+    return impl::iter_cmp(lhs, rhs) > 0;
 }
 
-bool operator>=(line_iterator lhs, line_iterator rhs)
+inline bool operator>=(line_iterator lhs, line_iterator rhs)
 {
-    return iter_cmp(lhs, rhs) >= 0;
+    return impl::iter_cmp(lhs, rhs) >= 0;
 }
 
 } // namespace i2d

@@ -28,8 +28,8 @@ inline std::ostream& operator<<(std::ostream& stream, rect_t r)
 
 inline std::ostream& operator<<(std::ostream& stream, line_state_t st)
 {
-    stream << "line_state_t{ " << st.position << ", "
-                               << st.direct_tion << ", "
+    stream << "line_state_t{ " << st.pos << ", "
+                               << st.dir << ", "
                                << st.error << " }";
     return stream;
 }

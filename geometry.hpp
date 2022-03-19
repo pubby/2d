@@ -14,13 +14,13 @@
 
 namespace i2d {
 
-constexpr coord_t left_n(coord_t c, int_t n)  
+constexpr coord_t left_n(coord_t c, int2d_t n)  
     { return coord_t{ c.x - n, c.y }; }
-constexpr coord_t right_n(coord_t c, int_t n)
+constexpr coord_t right_n(coord_t c, int2d_t n)
     { return coord_t{ c.x + n, c.y }; }
-constexpr coord_t up_n(coord_t c, int_t n)
+constexpr coord_t up_n(coord_t c, int2d_t n)
     { return coord_t{ c.x, c.y - n }; }
-constexpr coord_t down_n(coord_t c, int_t n)
+constexpr coord_t down_n(coord_t c, int2d_t n)
     { return coord_t{ c.x, c.y + n }; }
 
 constexpr coord_t left1(coord_t c)  { return left_n(c, 1); }
@@ -32,7 +32,7 @@ namespace impl {
     template<typename T>
     constexpr auto sqr(T t) { return t * t; }
 
-    inline int_t gcd(int_t a, int_t b)
+    inline int2d_t gcd(int2d_t a, int2d_t b)
     {
         while (b != 0)
         {
@@ -43,15 +43,15 @@ namespace impl {
     }
 } // namespace impl
 
-template<typename T = int_t>
+template<typename T = int2d_t>
 constexpr T dot_product(coord_t c1, coord_t c2)
 {
     return (static_cast<T>(c1.x) * static_cast<T>(c2.x)
             + static_cast<T>(c1.y) * static_cast<T>(c2.y));
 }
 
-constexpr int_t area(dimen_t d) { return d.w * d.h; }
-constexpr int_t area(rect_t r) { return area(r.d); }
+constexpr int2d_t area(dimen_t d) { return d.w * d.h; }
+constexpr int2d_t area(rect_t r) { return area(r.d); }
 
 // Given a 5x3 rect_t:
 //   -----
@@ -61,17 +61,17 @@ constexpr int_t area(rect_t r) { return area(r.d); }
 //   -----
 //   perimeter: number of | and - characters (16)
 //   inner_perimeter: number of x characters (12)
-constexpr int_t perimeter(dimen_t d) { return 2 * d.w + 2 * d.h; }
-constexpr int_t perimeter(rect_t r) { return perimeter(r.d); }
-constexpr int_t inner_perimeter(dimen_t d) { return 2*(d.w-1) + 2*(d.h-1); }
-constexpr int_t inner_perimeter(rect_t r) { return inner_perimeter(r.d); }
+constexpr int2d_t perimeter(dimen_t d) { return 2 * d.w + 2 * d.h; }
+constexpr int2d_t perimeter(rect_t r) { return perimeter(r.d); }
+constexpr int2d_t inner_perimeter(dimen_t d) { return 2*(d.w-1) + 2*(d.h-1); }
+constexpr int2d_t inner_perimeter(rect_t r) { return inner_perimeter(r.d); }
 
-inline int_t c_dist(coord_t c1, coord_t c2) // chess distance
+inline int2d_t c_dist(coord_t c1, coord_t c2) // chess distance
 {
     return std::max(std::abs(c1.x - c2.x), std::abs(c1.y - c2.y));
 }
 
-inline int_t m_dist(coord_t c1, coord_t c2) // manhattan distance
+inline int2d_t m_dist(coord_t c1, coord_t c2) // manhattan distance
 {
     return std::abs(c1.x - c2.x) + std::abs(c1.y - c2.y);
 }
@@ -84,7 +84,7 @@ inline double e_dist(coord_t c1, coord_t c2) // euclidian distance
 // Reduces the fraction representind direction
 inline coord_t simplify_dir(coord_t direction)
 {
-    int_t const gcd_value = impl::gcd(direction.x, direction.y);
+    int2d_t const gcd_value = impl::gcd(direction.x, direction.y);
     components([&direction, gcd_value](auto c)
                { direction[c] /= gcd_value; });
     return direction;
@@ -96,16 +96,16 @@ inline double dir_to_rad(coord_t dir)
     return std::atan2(-dir.y, dir.x);
 }
 
-inline coord_t rad_to_dir(double rad, int_t length)
+inline coord_t rad_to_dir(double rad, int2d_t length)
 {
     return
     {
-        (int_t)std::round(std::cos(rad) * length),
-        (int_t)std::round(-std::sin(rad) * length),
+        (int2d_t)std::round(std::cos(rad) * length),
+        (int2d_t)std::round(-std::sin(rad) * length),
     };
 }
 
-constexpr dimen_t rotate(dimen_t dimen, int_t rotations)
+constexpr dimen_t rotate(dimen_t dimen, int2d_t rotations)
 {
     if((unsigned)rotations & 1)
         return { dimen.h, dimen.w };
@@ -114,7 +114,7 @@ constexpr dimen_t rotate(dimen_t dimen, int_t rotations)
 }
 
 constexpr rect_t rotated_rect(coord_t upper_left, dimen_t dimen, 
-                              int_t rotations)
+                              int2d_t rotations)
 {
     return { upper_left, rotate(dimen, rotations) };
 }
@@ -235,9 +235,14 @@ inline rect_t crop(rect_t too_big, rect_t crop_boundary)
     return rect_from_2_coords(c1, c2);
 }
 
-inline rect_t rect_from_radius(coord_t center, int_t rad)
+inline rect_t crop(rect_t too_big, dimen_t crop_boundary)
 {
-    int_t const d = rad*2 + 1;
+    return crop(too_big, to_rect(crop_boundary));
+}
+
+inline rect_t rect_from_radius(coord_t center, int2d_t rad)
+{
+    int2d_t const d = rad*2 + 1;
     return { center - coord_t{rad,rad}, dimen_t{d,d} };
 }
 
@@ -249,8 +254,7 @@ inline coord_t rect_center(rect_t r)
 inline rect_t centered_rect(coord_t center_point, dimen_t dim)
 {
     rect_t r;
-    components(
-        [&](auto c) { r.c[c] = center_point[c] - dim[c] / 2; });
+    components([&](auto c) { r.c[c] = center_point[c] - dim[c] / 2; });
     r.d = dim;
     return r;
 }
@@ -262,24 +266,70 @@ inline rect_t centered_inside(dimen_t dim, rect_t in)
     return { center - to_coord(dim/2), dim };
 }
 
+inline rect_t lmargin(rect_t r, int2d_t margin)
+{
+    r.c.x += margin;
+    r.d.w = std::max(0, r.d.w - margin);
+    return r;
+}
+
+inline rect_t rmargin(rect_t r, int2d_t margin)
+{
+    r.d.w = std::max(0, r.d.w - margin);
+    return r;
+}
+
+inline rect_t umargin(rect_t r, int2d_t margin)
+{
+    r.c.y += margin;
+    r.d.h = std::max(0, r.d.h - margin);
+    return r;
+}
+
+inline rect_t dmargin(rect_t r, int2d_t margin)
+{
+    r.d.h = std::max(0, r.d.h - margin);
+    return r;
+}
+
 inline rect_t rect_margin(rect_t r, 
-                          int_t left, int_t top, int_t right, int_t bottom)
+                          int2d_t left, int2d_t top, int2d_t right, int2d_t bottom)
 {
     r.c.x += left;
-    r.c.y += right;
+    r.c.y += top;
     r.d.w = std::max(0, r.d.w - left - right);
     r.d.h = std::max(0, r.d.h - top - bottom);
     return r;
 }
 
-inline rect_t rect_margin(rect_t r, int_t margin)
+inline rect_t rect_margin(rect_t r, int2d_t margin)
 {
     return rect_margin(r, margin, margin, margin, margin);
 }
 
-inline rect_t rect_margin(rect_t r, int_t x_margin, int_t y_margin)
+inline rect_t rect_margin(rect_t r, int2d_t x_margin, int2d_t y_margin)
 {
     return rect_margin(r, x_margin, y_margin, x_margin, y_margin);
+}
+
+constexpr rect_t lpanel(rect_t r, int2d_t w)
+{
+    return {{ r.c.x, r.c.y }, { w, r.d.h }};
+}
+
+constexpr rect_t rpanel(rect_t r, int2d_t w) 
+{ 
+    return {{ r.c.x + r.d.w - w, r.c.y }, { w, r.d.h }};
+}
+
+constexpr rect_t upanel(rect_t r, int2d_t h)
+{
+    return {{ r.c.x, r.c.y }, { r.d.w, h }};
+}
+
+constexpr rect_t dpanel(rect_t r, int2d_t h) 
+{ 
+    return {{ r.c.x, r.c.y + r.d.h - h }, { r.d.w, h }};
 }
 
 class rect_iterator
@@ -302,7 +352,7 @@ public:
         return *this;
     }
 
-    rect_iterator operator++(int_t)
+    rect_iterator operator++(int2d_t)
     {
         rect_iterator ret = *this;
         ++(*this);
@@ -388,7 +438,7 @@ public:
         return *this;
     }
 
-    rect_edge_iterator operator++(int_t)
+    rect_edge_iterator operator++(int2d_t)
     {
         rect_edge_iterator ret = *this;
         ++(*this);
@@ -414,7 +464,7 @@ private:
 
     rect_t m_rect;
     coord_t m_current;
-    int_t m_mode;
+    int2d_t m_mode;
 };
 
 inline bool operator==(rect_edge_iterator lhs,
@@ -430,35 +480,46 @@ inline bool operator!=(rect_edge_iterator lhs,
     return !(lhs == rhs);
 }
 
-template<std::size_t N = 8>
-std::array<coord_t, N> dir_range;
-
-template<>
-constexpr std::array<coord_t, 8> dir_range<8> =
+constexpr std::array<coord_t, 8> dir_range =
 {{
     {  1,  0 },
-    {  1, -1 },
-    {  0, -1 },
-    { -1, -1 },
+    {  1,  1 },
+    {  0,  1 },
+    { -1,  1 },
     { -1,  0 },
+    { -1, -1 },
+    {  0, -1 },
+    {  1, -1 },
+}};
+
+template<std::size_t N = 8>
+std::array<coord_t, N> adjacent_range;
+
+template<>
+constexpr std::array<coord_t, 8> adjacent_range<8> =
+{{
+    { -1, -1 },
+    {  0, -1 },
+    {  1, -1 },
+    { -1,  0 },
+    {  1,  0 },
     { -1,  1 },
     {  0,  1 },
     {  1,  1 },
 }};
 
 template<>
-constexpr std::array<coord_t, 4> dir_range<4> =
+constexpr std::array<coord_t, 4> adjacent_range<4> =
 {{
-    {  1,  0 },
     {  0, -1 },
     { -1,  0 },
+    {  1,  0 },
     {  0,  1 },
 }};
 
 class adjacent_iterator
 : public std::iterator<std::forward_iterator_tag, coord_t const>
 {
-friend class adjacent_range;
 public:
     adjacent_iterator() = default;
 
@@ -478,7 +539,7 @@ public:
         return *this;
     }
 
-    adjacent_iterator operator++(int_t)
+    adjacent_iterator operator++(int2d_t)
     {
         adjacent_iterator ret = *this;
         ++(*this);
@@ -542,7 +603,7 @@ inline rect_range dimen_range(dimen_t dim)
     return rect_range(to_rect(dim));
 }
 
-inline rect_range circular_range(coord_t crd, int_t rad)
+inline rect_range circular_range(coord_t crd, int2d_t rad)
 {
     return rect_range(rect_from_radius(crd, rad));
 }
@@ -570,37 +631,10 @@ private:
     rect_edge_iterator m_end;
 };
 
-inline rect_edge_range radius_range(coord_t center, int_t rad)
+inline rect_edge_range radius_range(coord_t center, int2d_t rad)
 {
     return rect_edge_range(rect_from_radius(center, rad));
 }
-
-class adjacent_range
-{
-public:
-    using const_iterator = adjacent_iterator;
-
-    adjacent_range() = delete;
-
-    adjacent_range(coord_t center)
-    : m_begin(center, adjacent_iterator::begin_tag())
-    , m_end(center, adjacent_iterator::end_tag())
-    {}
-
-    adjacent_iterator begin() const { return m_begin; }
-    adjacent_iterator end() const { return m_end; }
-
-    adjacent_iterator cbegin() const { return begin(); }
-    adjacent_iterator cend() const { return cend(); }
-
-    coord_t center() const { return m_begin.center(); }
-
-    static constexpr int_t const_size = 8;
-    constexpr int_t size() const { return const_size; }
-private:
-    adjacent_iterator m_begin;
-    adjacent_iterator m_end;
-};
 
 } // namespace i2d
 
