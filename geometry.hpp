@@ -78,7 +78,7 @@ inline int2d_t m_dist(coord_t c1, coord_t c2) // manhattan distance
 
 inline double e_dist(coord_t c1, coord_t c2) // euclidian distance
 {
-    return std::sqrt(impl::sqr(c1.x - c2.x) + impl::sqr(c1.y - c2.y));
+    return std::sqrt(double(impl::sqr(c1.x - c2.x) + impl::sqr(c1.y - c2.y)));
 }
 
 // Reduces the fraction representind direction
@@ -121,6 +121,7 @@ constexpr rect_t rotated_rect(coord_t upper_left, dimen_t dimen,
 
 constexpr rect_t to_rect(dimen_t dim) { return { {0,0}, dim }; }
 constexpr coord_t to_coord(dimen_t dim) { return { dim.w, dim.h }; }
+constexpr dimen_t to_dimen(coord_t crd) { return { crd.x, crd.y }; }
 
 constexpr bool in_bounds(coord_t crd, rect_t r)
 {
@@ -214,6 +215,11 @@ inline rect_t grow_rect_to_contain(rect_t r1, rect_t r2)
     return rect_from_n_coords(crds.begin(), crds.end());
 }
 
+inline dimen_t grow_dimen_to_contain(dimen_t a, dimen_t b)
+{
+    return { std::max(a.w, b.w), std::max(a.h, b.h), };
+}
+
 inline coord_t crop(coord_t crd, rect_t super)
 {
     crd.x = std::min(std::max(crd.x, super.c.x), super.rx());
@@ -230,6 +236,8 @@ inline dimen_t crop(dimen_t too_big, dimen_t crop_boundary)
 
 inline rect_t crop(rect_t too_big, rect_t crop_boundary)
 {
+    if(!too_big || !crop_boundary || !overlapping(too_big, crop_boundary))
+        return {};
     coord_t c1 = crop(too_big.c, crop_boundary);
     coord_t c2 = crop(too_big.r(), crop_boundary);
     return rect_from_2_coords(c1, c2);
@@ -582,9 +590,12 @@ public:
 
     rect_range() : rect_range(rect_t{}) {}
     rect_range(rect_t r)
-    : m_begin(r, rect_iterator::begin_tag())
-    , m_end(r, rect_iterator::end_tag())
-    {}
+    {
+        if(area(r) == 0)
+            r = {};
+        m_begin = rect_iterator(r, rect_iterator::begin_tag());
+        m_end = rect_iterator(r, rect_iterator::end_tag());
+    }
 
     rect_iterator begin() const { return m_begin; }
     rect_iterator end() const { return m_end; }
