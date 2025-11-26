@@ -504,7 +504,7 @@ template<std::size_t N = 8>
 std::array<coord_t, N> adjacent_range;
 
 template<>
-constexpr std::array<coord_t, 8> adjacent_range<8> =
+inline constexpr std::array<coord_t, 8> adjacent_range<8> =
 {{
     { -1, -1 },
     {  0, -1 },
@@ -517,7 +517,7 @@ constexpr std::array<coord_t, 8> adjacent_range<8> =
 }};
 
 template<>
-constexpr std::array<coord_t, 4> adjacent_range<4> =
+inline constexpr std::array<coord_t, 4> adjacent_range<4> =
 {{
     {  0, -1 },
     { -1,  0 },
